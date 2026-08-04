@@ -12,6 +12,7 @@ from pathlib import Path
 import time
 from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime, timedelta
+from zoneinfo import ZoneInfo
 from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from urllib.parse import urlencode, urlparse
@@ -23,6 +24,7 @@ DIST = ROOT / "dist"
 AIR_CACHE_SECONDS = 3600
 KMA_URL = "https://apis.data.go.kr/1360000/VilageFcstInfoService_2.0/getUltraSrtNcst"
 AIR_URL = "https://apis.data.go.kr/B552584/ArpltnInforInqireSvc/getCtprvnRltmMesureDnsty"
+KST = ZoneInfo("Asia/Seoul")
 REGIONS = {
     "seoul": ("서울특별시", 60, 127), "busan": ("부산광역시", 98, 76),
     "daegu": ("대구광역시", 89, 90), "incheon": ("인천광역시", 55, 124),
@@ -52,7 +54,7 @@ def load_local_env() -> None:
 
 def base_time() -> tuple[str, str]:
     # Observations are issued after the half hour. Use the completed hour.
-    now = datetime.now() - timedelta(minutes=40)
+    now = datetime.now(KST) - timedelta(minutes=40)
     return now.strftime("%Y%m%d"), now.strftime("%H00")
 
 
@@ -105,7 +107,7 @@ def live_data() -> dict:
         raise RuntimeError("기상청 관측값을 받지 못했습니다.")
     for key, pm25 in air_data().items():
         results[key]["pm25"] = pm25
-    payload = {"source": "제공: 기상청 30분 · 한국환경공단 에어코리아 1시간", "updatedAt": datetime.now().isoformat(timespec="minutes"), "locations": results}
+    payload = {"source": "제공: 기상청 30분 · 한국환경공단 에어코리아 1시간", "updatedAt": datetime.now(KST).isoformat(timespec="minutes"), "locations": results}
     cache = (time.time(), payload)
     return payload
 
