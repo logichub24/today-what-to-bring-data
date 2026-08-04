@@ -101,6 +101,8 @@ def live_data() -> dict:
         raise RuntimeError("공공데이터 인증키가 설정되지 않았습니다.")
     with ThreadPoolExecutor(max_workers=6) as pool:
         results = dict(pool.map(lambda pair: fetch_region(*pair), REGIONS.items()))
+    if not any("temp" in result and "humidity" in result for result in results.values()):
+        raise RuntimeError("기상청 관측값을 받지 못했습니다.")
     for key, pm25 in air_data().items():
         results[key]["pm25"] = pm25
     payload = {"source": "제공: 기상청 30분 · 한국환경공단 에어코리아 1시간", "updatedAt": datetime.now().isoformat(timespec="minutes"), "locations": results}
