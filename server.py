@@ -11,8 +11,7 @@ import os
 from pathlib import Path
 import time
 from concurrent.futures import ThreadPoolExecutor
-from datetime import datetime, timedelta
-from zoneinfo import ZoneInfo
+from datetime import datetime, timedelta, timezone
 from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from urllib.parse import urlencode, urlparse
@@ -24,7 +23,7 @@ DIST = ROOT / "dist"
 AIR_CACHE_SECONDS = 3600
 KMA_URL = "https://apis.data.go.kr/1360000/VilageFcstInfoService_2.0/getUltraSrtNcst"
 AIR_URL = "https://apis.data.go.kr/B552584/ArpltnInforInqireSvc/getCtprvnRltmMesureDnsty"
-KST = ZoneInfo("Asia/Seoul")
+KST = timezone(timedelta(hours=9))
 REGIONS = {
     "seoul": ("서울특별시", 60, 127), "busan": ("부산광역시", 98, 76),
     "daegu": ("대구광역시", 89, 90), "incheon": ("인천광역시", 55, 124),
