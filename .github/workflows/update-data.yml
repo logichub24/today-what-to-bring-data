@@ -17,7 +17,22 @@ jobs:
         env:
           PUBLIC_DATA_SERVICE_KEY: ${{ secrets.PUBLIC_DATA_SERVICE_KEY }}
         run: |
-          python -c "import json; from pathlib import Path; import server; output = Path('data/today.json'); output.parent.mkdir(parents=True, exist_ok=True); output.write_text(json.dumps(server.live_data(), ensure_ascii=False), encoding='utf-8')"
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          import server
+
+          try:
+              payload = server.live_data()
+          except RuntimeError as error:
+              if "관측값" not in str(error):
+                  raise
+              print(f"Public data temporarily unavailable; keeping last valid file: {error}")
+          else:
+              output = Path('data/today.json')
+              output.parent.mkdir(parents=True, exist_ok=True)
+              output.write_text(json.dumps(payload, ensure_ascii=False), encoding='utf-8')
+          PY
       - name: Publish data
         run: |
           git config user.name 'github-actions[bot]'
