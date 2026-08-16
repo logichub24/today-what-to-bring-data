@@ -57,6 +57,17 @@ def base_time() -> tuple[str, str]:
     return now.strftime("%Y%m%d"), now.strftime("%H00")
 
 
+def fetch_json(url: str, timeout: int) -> dict:
+    for attempt in range(3):
+        try:
+            with urlopen(url, timeout=timeout) as response:
+                return json.load(response)
+        except (OSError, ValueError):
+            if attempt == 2:
+                raise
+            time.sleep(attempt + 1)
+
+
 def fetch_region(key: str, region: tuple[str, int, int]) -> tuple[str, dict]:
     name, nx, ny = region
     try:
@@ -65,8 +76,7 @@ def fetch_region(key: str, region: tuple[str, int, int]) -> tuple[str, dict]:
             "serviceKey": os.environ["PUBLIC_DATA_SERVICE_KEY"], "pageNo": 1, "numOfRows": 10,
             "dataType": "JSON", "base_date": base_date, "base_time": base_hour, "nx": nx, "ny": ny,
         })
-        with urlopen(f"{KMA_URL}?{query}", timeout=5) as response:
-            payload = json.load(response)
+        payload = fetch_json(f"{KMA_URL}?{query}", 5)
         values = {item["category"]: item["obsrValue"] for item in payload["response"]["body"]["items"]["item"]}
         return key, {"name": name, "temp": float(values["T1H"]), "rain": float(values.get("RN1", 0)), "humidity": float(values["REH"])}
     except (KeyError, OSError, TypeError, ValueError):
@@ -76,8 +86,7 @@ def fetch_region(key: str, region: tuple[str, int, int]) -> tuple[str, dict]:
 def fetch_air_region(key: str) -> tuple[str, float | None]:
     query = urlencode({"serviceKey": os.environ["PUBLIC_DATA_SERVICE_KEY"], "returnType": "json", "numOfRows": 100, "pageNo": 1, "sidoName": AIR_NAMES[key], "ver": "1.0"})
     try:
-        with urlopen(f"{AIR_URL}?{query}", timeout=10) as response:
-            items = json.load(response)["response"]["body"]["items"]
+        items = fetch_json(f"{AIR_URL}?{query}", 10)["response"]["body"]["items"]
         values = [float(item["pm25Value"]) for item in items if str(item.get("pm25Value") or "").replace(".", "", 1).isdigit()]
         return key, round(sum(values) / len(values), 1) if values else None
     except (KeyError, OSError, TypeError, ValueError):
